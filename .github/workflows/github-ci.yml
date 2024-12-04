@@ -37,7 +37,7 @@ jobs:
 
       # Bước 3: Cài đặt dependencies
       - name: Install dependencies
-        run: npm install
+        run: sudo npm install
         # run: npm ci # Dùng npm ci để cài đặt dependencies từ package-lock.json
 
       # Bước 4: Chạy kiểm thử
@@ -49,13 +49,12 @@ jobs:
 
       # Bước 5: Build ứng dụng
       - name: Build application
-        run: npm run build
+        run: sudo npm run build
 
   # Job 2: Deploy ứng dụng
   deploy:
     runs-on: ubuntu-latest
     needs: build_and_test
-    if: github.ref == 'refs/heads/main'
     steps:
       # Bước 1: Checkout code
       - name: Checkout code
@@ -67,10 +66,13 @@ jobs:
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
           echo "Deploying branch: ${{ github.ref_name }}"
-          if [[ "${{ github.ref_name }}" == "${MAIN_BRANCH}" ]]; then
-            scp -r dist/ user@production-server:/var/www/html;
-          elif [[ "${{ github.ref_name }}" == "${STAGING_BRANCH}" ]]; then
-            scp -r dist/ user@staging-server:/var/www/html;
-          elif [[ "${{ github.ref_name }}" == "${DEVELOP_BRANCH}" ]]; then
-            scp -r dist/ user@develop-server:/var/www/html;
-          fi
+          case "${{ github.ref_name }}" in
+            "${MAIN_BRANCH}")
+              echo "Deploying to Production";;
+            "${STAGING_BRANCH}")
+              echo "Deploying to Staging";;
+            "${DEVELOP_BRANCH}")
+              echo "Deploying to Development";;
+            *)
+              echo "Unknown branch: ${{ github.ref_name }}";;
+          esac
