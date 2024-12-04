@@ -1,0 +1,76 @@
+# Định nghĩa tên workflow
+name: CI/CD Pipeline (Test)
+
+# Các biến môi trường
+env:
+  NODE_ENV: production
+  MAIN_BRANCH: main
+  STAGING_BRANCH: staging
+  DEVELOP_BRANCH: develop
+
+# Kích hoạt workflow
+on:
+  push:
+    branches:
+      - main
+      - staging
+      - develop
+  pull_request:
+    branches:
+      - main
+
+# Jobs định nghĩa các bước trong pipeline
+jobs:
+  # Job 1: Kiểm tra, build và test ứng dụng
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      # Bước 1: Checkout code từ repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Bước 2: Thiết lập Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.17.0
+
+      # Bước 3: Cài đặt dependencies
+      - name: Install dependencies
+        run: npm install
+        # run: npm ci # Dùng npm ci để cài đặt dependencies từ package-lock.json
+
+      # Bước 4: Chạy kiểm thử
+      # - name: Run tests
+      #   run: npm test
+      # Bước 4: Kiểm tra Node.js version (tuỳ chọn)
+      - name: Check Node.js version
+        run: node -v
+
+      # Bước 5: Build ứng dụng
+      - name: Build application
+        run: npm run build
+
+  # Job 2: Deploy ứng dụng
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      # Bước 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Bước 2: Triển khai ứng dụng (ví dụ sử dụng SSH)
+      - name: Deploy application
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          echo "Deploying branch: ${{ github.ref_name }}"
+          if [[ "${{ github.ref_name }}" == "${MAIN_BRANCH}" ]]; then
+            scp -r dist/ user@production-server:/var/www/html;
+          elif [[ "${{ github.ref_name }}" == "${STAGING_BRANCH}" ]]; then
+            scp -r dist/ user@staging-server:/var/www/html;
+          elif [[ "${{ github.ref_name }}" == "${DEVELOP_BRANCH}" ]]; then
+            scp -r dist/ user@develop-server:/var/www/html;
+          fi
