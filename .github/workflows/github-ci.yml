@@ -65,7 +65,7 @@ jobs:
         env:
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
-          echo "Deploying branch: ${{ github.ref_name }}"
+          echo "Deploying branch: ${{ github.ref_name }} - ${ CI_JOB_TOKEN }"
           case "${{ github.ref_name }}" in
             "${MAIN_BRANCH}")
               echo "Deploying to Production";;
